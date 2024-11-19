@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>五子棋</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 2px solid #333;
+      background-color: #ffcc99;
+    }
+    .game-over {
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .game-control {
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    <div class="game-control">
+      <button id="restartBtn">重新开始</button>
+    </div>
+    <div id="gameOverMessage" class="game-over" style="display: none;"></div>
+  </div>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const restartBtn = document.getElementById('restartBtn');
+    const gameOverMessage = document.getElementById('gameOverMessage');
+
+    const boardSize = 15; // 棋盘大小
+    const cellSize = canvas.width / boardSize; // 每个格子大小
+    const board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0)); // 棋盘状态
+    let currentPlayer = 1; // 当前玩家（1：黑棋，2：白棋）
+    let isGameOver = false;
+
+    // 初始化游戏
+    function initGame() {
+      board.forEach(row => row.fill(0));
+      currentPlayer = 1;
+      isGameOver = false;
+      gameOverMessage.style.display = 'none';
+      drawBoard();
+    }
+
+    // 绘制棋盘
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制网格
+      ctx.strokeStyle = '#000';
+      for (let i = 0; i < boardSize; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * cellSize + cellSize / 2, cellSize / 2);
+        ctx.lineTo(i * cellSize + cellSize / 2, canvas.height - cellSize / 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cellSize / 2, i * cellSize + cellSize / 2);
+        ctx.lineTo(canvas.width - cellSize / 2, i * cellSize + cellSize / 2);
+        ctx.stroke();
+      }
+
+      // 绘制棋子
+      for (let y = 0; y < boardSize; y++) {
+        for (let x = 0; x < boardSize; x++) {
+          if (board[y][x] === 1) drawStone(x, y, 'black'); // 黑棋
+          if (board[y][x] === 2) drawStone(x, y, 'white'); // 白棋
+        }
+      }
+    }
+
+    // 绘制单个棋子
+    function drawStone(x, y, color) {
+      ctx.beginPath();
+      ctx.arc(
+        x * cellSize + cellSize / 2,
+        y * cellSize + cellSize / 2,
+        cellSize / 2 - 2,
+        0,
+        Math.PI * 2
+      );
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.stroke();
+    }
+
+    // 检查胜利
+    function checkWin(x, y) {
+      const directions = [
+        { dx: 1, dy: 0 }, // 横
+        { dx: 0, dy: 1 }, // 竖
+        { dx: 1, dy: 1 }, // 正斜
+        { dx: 1, dy: -1 }, // 反斜
+      ];
+
+      for (const { dx, dy } of directions) {
+        let count = 1;
+        for (let step = 1; step < 5; step++) {
+          const nx = x + dx * step;
+          const ny = y + dy * step;
+          if (nx < 0 || nx >= boardSize || ny < 0 || ny >= boardSize) break;
+          if (board[ny][nx] === currentPlayer) count++;
+          else break;
+        }
+
+        for (let step = 1; step < 5; step++) {
+          const nx = x - dx * step;
+          const ny = y - dy * step;
+          if (nx < 0 || nx >= boardSize || ny < 0 || ny >= boardSize) break;
+          if (board[ny][nx] === currentPlayer) count++;
+          else break;
+        }
+
+        if (count >= 5) return true;
+      }
+
+      return false;
+    }
+
+    // 点击落子
+    canvas.addEventListener('click', (event) => {
+      if (isGameOver) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((event.clientX - rect.left) / cellSize);
+      const y = Math.floor((event.clientY - rect.top) / cellSize);
+
+      if (board[y][x] !== 0) return; // 已有棋子
+
+      board[y][x] = currentPlayer;
+      drawBoard();
+
+      if (checkWin(x, y)) {
+        isGameOver = true;
+        gameOverMessage.textContent = `${currentPlayer === 1 ? '黑棋' : '白棋'}胜利！`;
+        gameOverMessage.style.display = 'block';
+        return;
+      }
+
+      currentPlayer = currentPlayer === 1 ? 2 : 1; // 切换玩家
+    });
+
+    // 重新开始游戏
+    restartBtn.addEventListener('click', initGame);
+
+    // 启动游戏
+    initGame();
+  </script>
+</body>
+</html>
